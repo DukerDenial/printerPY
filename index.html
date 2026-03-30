@@ -1,10 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family:sans-serif;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    color:white;
+}
+
+.header {
+    text-align:center;
+    padding:20px;
+    font-size:20px;
+}
+
+.menu button {
+    width:90%;
+    margin:10px auto;
+    display:block;
+    padding:15px;
+    border:none;
+    border-radius:12px;
+    background:#3b82f6;
+    color:white;
+}
+
+.card {
+    background:#1e293b;
+    margin:10px;
+    padding:15px;
+    border-radius:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">🖨 Управление</div>
+
+<div class="menu">
+    <button onclick="loadPrinters()">📦 Принтеры</button>
+    <button onclick="loadHistory()">📜 История</button>
+    <button onclick="loadStats()">📊 График</button>
+</div>
+
+<div id="content"></div>
+
 <script>
-const tg = window.Telegram.WebApp;
-tg.expand();
+const API = "https://printer-py.vercel.app/api"
 
-const user = tg.initDataUnsafe?.user;
+// ---------------- ПРИНТЕРЫ ----------------
+async function loadPrinters(){
+    let res = await fetch(API+"/printers")
+    let data = await res.json()
 
-if (user) {
-    console.log("USER:", user.id, user.username);
+    let html=""
+
+    data.forEach(p=>{
+        html += `<div class="card">
+        ${p}<br>
+        <button onclick="openPrinter('${p}')">Открыть</button>
+        </div>`
+    })
+
+    document.getElementById("content").innerHTML = html
+}
+
+// ---------------- КАРТРИДЖИ ----------------
+async function openPrinter(p){
+    let res = await fetch(API+"/cartridges/"+p)
+    let data = await res.json()
+
+    let html = `<h3>${p}</h3>`
+
+    data.forEach(c=>{
+        html += `<div class="card">
+        ${c.name} — ${c.qty}
+        <br>
+        <button onclick="update(${c.id},'plus')">+</button>
+        <button onclick="update(${c.id},'minus')">-</button>
+        </div>`
+    })
+
+    document.getElementById("content").innerHTML = html
+}
+
+// ---------------- UPDATE ----------------
+async function update(id,action){
+    await fetch(API+"/update",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({id,action})
+    })
+
+    loadPrinters()
+}
+
+// ---------------- HISTORY ----------------
+async function loadHistory(){
+    let res = await fetch(API+"/history")
+    let data = await res.json()
+
+    let html=""
+
+    data.forEach(h=>{
+        html += `<div class="card">${h[0]} → ${h[1]}<br>${h[2]}</div>`
+    })
+
+    document.getElementById("content").innerHTML = html
+}
+
+// ---------------- GRAPH ----------------
+async function loadStats(){
+    let res = await fetch(API+"/stats")
+    let data = await res.json()
+
+    document.getElementById("content").innerHTML=`<canvas id="chart"></canvas>`
+
+    new Chart(document.getElementById("chart"),{
+        type:"bar",
+        data:{
+            labels:data.map(x=>x[0]),
+            datasets:[{
+                label:"Расход",
+                data:data.map(x=>x[1])
+            }]
+        }
+    })
 }
 </script>
+
+</body>
+</html>
