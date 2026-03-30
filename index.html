@@ -27,6 +27,7 @@ body {
     border-radius:12px;
     background:#3b82f6;
     color:white;
+    font-size:16px;
 }
 
 .card {
@@ -51,16 +52,32 @@ body {
 <div id="content"></div>
 
 <script>
-const API = "http://176.123.166.80:5000"
+// ---------------- ДЕМО ДАННЫЕ ----------------
+
+const printers = {
+    "HP LaserJet": [
+        {name: "CF259A", qty: 5},
+        {name: "CF259X", qty: 2}
+    ],
+    "Kyocera": [
+        {name: "TK-1170", qty: 7},
+        {name: "TK-3160", qty: 1}
+    ]
+}
+
+const history = [
+    ["TK-1170", "minus", "2026-03-30 14:20"],
+    ["CF259A", "minus", "2026-03-30 13:10"],
+    ["TK-3160", "minus", "2026-03-29 18:00"],
+    ["CF259X", "minus", "2026-03-29 15:30"]
+]
 
 // ---------------- ПРИНТЕРЫ ----------------
-async function loadPrinters(){
-    let res = await fetch(API+"/printers")
-    let data = await res.json()
 
-    let html=""
+function loadPrinters(){
+    let html = "<h3 style='padding:10px'>Принтеры</h3>"
 
-    data.forEach(p=>{
+    Object.keys(printers).forEach(p=>{
         html += `<div class="card">
         ${p}<br>
         <button onclick="openPrinter('${p}')">Открыть</button>
@@ -70,64 +87,54 @@ async function loadPrinters(){
     document.getElementById("content").innerHTML = html
 }
 
-// ---------------- КАРТРИДЖИ ----------------
-async function openPrinter(p){
-    let res = await fetch(API+"/cartridges/"+p)
-    let data = await res.json()
+// ---------------- ОТКРЫТЬ ПРИНТЕР ----------------
 
-    let html = `<h3>${p}</h3>`
+function openPrinter(p){
+    let html = `<h3 style='padding:10px'>${p}</h3>`
 
-    data.forEach(c=>{
+    printers[p].forEach(c=>{
         html += `<div class="card">
-        ${c.name} — ${c.qty}
-        <br>
-        <button onclick="update(${c.id},'plus')">+</button>
-        <button onclick="update(${c.id},'minus')">-</button>
+        ${c.name}<br>
+        Остаток: ${c.qty}
         </div>`
     })
 
     document.getElementById("content").innerHTML = html
 }
 
-// ---------------- UPDATE ----------------
-async function update(id,action){
-    await fetch(API+"/update",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({id,action})
-    })
+// ---------------- ИСТОРИЯ ----------------
 
-    loadPrinters()
-}
+function loadHistory(){
+    let html = "<h3 style='padding:10px'>История</h3>"
 
-// ---------------- HISTORY ----------------
-async function loadHistory(){
-    let res = await fetch(API+"/history")
-    let data = await res.json()
-
-    let html=""
-
-    data.forEach(h=>{
-        html += `<div class="card">${h[0]} → ${h[1]}<br>${h[2]}</div>`
+    history.forEach(h=>{
+        html += `<div class="card">
+        ${h[0]} → ${h[1]}<br>${h[2]}
+        </div>`
     })
 
     document.getElementById("content").innerHTML = html
 }
 
-// ---------------- GRAPH ----------------
-async function loadStats(){
-    let res = await fetch(API+"/stats")
-    let data = await res.json()
+// ---------------- ГРАФИК ----------------
 
-    document.getElementById("content").innerHTML=`<canvas id="chart"></canvas>`
+function loadStats(){
+
+    let stats = {}
+
+    history.forEach(h=>{
+        stats[h[0]] = (stats[h[0]] || 0) + 1
+    })
+
+    document.getElementById("content").innerHTML = `<canvas id="chart"></canvas>`
 
     new Chart(document.getElementById("chart"),{
         type:"bar",
         data:{
-            labels:data.map(x=>x[0]),
+            labels:Object.keys(stats),
             datasets:[{
                 label:"Расход",
-                data:data.map(x=>x[1])
+                data:Object.values(stats)
             }]
         }
     })
