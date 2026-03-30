@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body {
+    background: #0f172a;
+    color: white;
+    font-family: sans-serif;
+    padding: 15px;
+}
+button {
+    width: 100%;
+    padding: 12px;
+    margin: 5px 0;
+}
+.card {
+    background: #1e293b;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🖨 Принтеры</h2>
+
+<div id="content"></div>
+
+<script>
+const API = "https://ТВОЙ_API_ДОМЕН" // ВСТАВЬ СЮДА
+
+async function load() {
+    const res = await fetch(API + "/printers")
+    const printers = await res.json()
+
+    let html = ""
+
+    printers.forEach(p => {
+        html += `<div class="card">
+            ${p}
+            <button onclick="openPrinter('${p}')">Открыть</button>
+        </div>`
+    })
+
+    document.getElementById("content").innerHTML = html
+}
+
+async function openPrinter(p) {
+    const res = await fetch(API + "/cartridges/" + p)
+    const data = await res.json()
+
+    let html = `<h3>${p}</h3>`
+
+    data.forEach(c => {
+        html += `<div class="card">
+            ${c[1]} — ${c[2]}
+            <button onclick="update(${c[0]}, 'plus')">+</button>
+            <button onclick="update(${c[0]}, 'minus')">-</button>
+        </div>`
+    })
+
+    document.getElementById("content").innerHTML = html
+}
+
+async function update(id, action) {
+    await fetch(API + "/update", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id, action})
+    })
+
+    load()
+}
+
+load()
+</script>
+
+</body>
+</html>
