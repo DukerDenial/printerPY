@@ -1,143 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Printer App</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 body {
-    margin:0;
-    font-family:sans-serif;
-    background:linear-gradient(135deg,#0f172a,#1e293b);
-    color:white;
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
 }
 
-.header {
-    text-align:center;
-    padding:20px;
-    font-size:20px;
+.container {
+    padding: 20px;
 }
 
-.menu button {
-    width:90%;
-    margin:10px auto;
-    display:block;
-    padding:15px;
-    border:none;
-    border-radius:12px;
-    background:#3b82f6;
-    color:white;
-    font-size:16px;
+h1 {
+    text-align: center;
+}
+
+.btn {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    background: #3b82f6;
+    color: white;
 }
 
 .card {
-    background:#1e293b;
-    margin:10px;
-    padding:15px;
-    border-radius:12px;
+    background: #1e293b;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 12px;
+}
+
+.hidden {
+    display: none;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">🖨 Управление</div>
+<div class="container">
 
-<div class="menu">
-    <button onclick="loadPrinters()">📦 Принтеры</button>
-    <button onclick="loadHistory()">📜 История</button>
-    <button onclick="loadStats()">📊 График</button>
+<h1>🖨 Управление</h1>
+
+<div id="menu">
+    <button class="btn" onclick="openPrinters()">📦 Принтеры</button>
+    <button class="btn" onclick="openHistory()">🧾 История</button>
+    <button class="btn" onclick="openStats()">📊 График</button>
 </div>
 
-<div id="content"></div>
+<div id="printers" class="hidden"></div>
+<div id="history" class="hidden"></div>
+<div id="stats" class="hidden"></div>
+
+</div>
 
 <script>
-// ---------------- ДЕМО ДАННЫЕ ----------------
+const API = "https://printer-py.vercel.app/"; // 🔥 СЮДА СВОЙ API
 
-const printers = {
-    "HP LaserJet": [
-        {name: "CF259A", qty: 5},
-        {name: "CF259X", qty: 2}
-    ],
-    "Kyocera": [
-        {name: "TK-1170", qty: 7},
-        {name: "TK-3160", qty: 1}
-    ]
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+function back() {
+    document.getElementById("menu").classList.remove("hidden");
+    document.getElementById("printers").classList.add("hidden");
+    document.getElementById("history").classList.add("hidden");
+    document.getElementById("stats").classList.add("hidden");
 }
 
-const history = [
-    ["TK-1170", "minus", "2026-03-30 14:20"],
-    ["CF259A", "minus", "2026-03-30 13:10"],
-    ["TK-3160", "minus", "2026-03-29 18:00"],
-    ["CF259X", "minus", "2026-03-29 15:30"]
-]
+async function openPrinters() {
+    document.getElementById("menu").classList.add("hidden");
+    const block = document.getElementById("printers");
+    block.classList.remove("hidden");
 
-// ---------------- ПРИНТЕРЫ ----------------
+    block.innerHTML = "<h2>📦 Принтеры</h2><button class='btn' onclick='back()'>⬅️ Назад</button>";
 
-function loadPrinters(){
-    let html = "<h3 style='padding:10px'>Принтеры</h3>"
+    const res = await fetch(API + "/printers");
+    const data = await res.json();
 
-    Object.keys(printers).forEach(p=>{
-        html += `<div class="card">
-        ${p}<br>
-        <button onclick="openPrinter('${p}')">Открыть</button>
-        </div>`
-    })
-
-    document.getElementById("content").innerHTML = html
+    data.forEach(p => {
+        block.innerHTML += `
+            <div class="card">
+                <b>${p.name}</b><br>
+                ${p.status}
+            </div>
+        `;
+    });
 }
 
-// ---------------- ОТКРЫТЬ ПРИНТЕР ----------------
+async function openHistory() {
+    document.getElementById("menu").classList.add("hidden");
+    const block = document.getElementById("history");
+    block.classList.remove("hidden");
 
-function openPrinter(p){
-    let html = `<h3 style='padding:10px'>${p}</h3>`
+    block.innerHTML = "<h2>🧾 История</h2><button class='btn' onclick='back()'>⬅️ Назад</button>";
 
-    printers[p].forEach(c=>{
-        html += `<div class="card">
-        ${c.name}<br>
-        Остаток: ${c.qty}
-        </div>`
-    })
+    const res = await fetch(API + "/history");
+    const data = await res.json();
 
-    document.getElementById("content").innerHTML = html
+    data.forEach(h => {
+        block.innerHTML += `
+            <div class="card">
+                ${h.date}<br>
+                ${h.user} → ${h.cartridge} (${h.action})
+            </div>
+        `;
+    });
 }
 
-// ---------------- ИСТОРИЯ ----------------
+async function openStats() {
+    document.getElementById("menu").classList.add("hidden");
+    const block = document.getElementById("stats");
+    block.classList.remove("hidden");
 
-function loadHistory(){
-    let html = "<h3 style='padding:10px'>История</h3>"
+    block.innerHTML = "<h2>📊 График</h2><button class='btn' onclick='back()'>⬅️ Назад</button>";
 
-    history.forEach(h=>{
-        html += `<div class="card">
-        ${h[0]} → ${h[1]}<br>${h[2]}
-        </div>`
-    })
-
-    document.getElementById("content").innerHTML = html
-}
-
-// ---------------- ГРАФИК ----------------
-
-function loadStats(){
-
-    let stats = {}
-
-    history.forEach(h=>{
-        stats[h[0]] = (stats[h[0]] || 0) + 1
-    })
-
-    document.getElementById("content").innerHTML = `<canvas id="chart"></canvas>`
-
-    new Chart(document.getElementById("chart"),{
-        type:"bar",
-        data:{
-            labels:Object.keys(stats),
-            datasets:[{
-                label:"Расход",
-                data:Object.values(stats)
-            }]
-        }
-    })
+    block.innerHTML += `
+        <div class="card">
+            <img src="${API}/stats" style="width:100%">
+        </div>
+    `;
 }
 </script>
 
