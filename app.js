@@ -1,4 +1,4 @@
-const API = "https://YOUR_SERVER_IP:5000";
+const API = "http://176.123.166.80:5000";
 
 async function loadPrinters() {
     const res = await fetch(API + "/printers");
